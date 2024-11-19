@@ -15,6 +15,7 @@ function App() {
   const { data: users = [] } = useQuery<User[]>('users', fetchUsers);
   const { data: applications = [] } = useQuery<Application[]>('applications', fetchApplications);
   
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
   const today = new Date();
   const dateRange = {
     start: format(startOfWeek(today), 'yyyy-MM-dd'),
@@ -62,6 +63,16 @@ function App() {
     updateGoalsMutation.mutate({ userId, dailyGoal, weeklyGoal });
   };
 
+  // Calculate today's application count for each user and sort
+  const usersWithCounts = users.map(user => {
+    const todayCount = applications.filter(
+      app => app.userId === user.id && app.date === todayStr
+    ).length;
+    return { ...user, todayCount };
+  });
+
+  const sortedUsers = [...usersWithCounts].sort((a, b) => b.todayCount - a.todayCount);
+
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -89,11 +100,12 @@ function App() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {users.map((user, index) => (
+          {sortedUsers.map((user, index) => (
             <UserCard
               key={user.id}
               user={user}
               applications={applications}
+              allUsers={sortedUsers}
               rank={index + 1}
               onUpdateGoals={(dailyGoal, weeklyGoal) => 
                 handleUpdateGoals(user.id, dailyGoal, weeklyGoal)

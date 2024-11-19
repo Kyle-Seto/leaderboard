@@ -1,22 +1,25 @@
-import React from 'react';
-import { Trophy, Flame, Target, TrendingUp, Star } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Trophy, Flame, Target, TrendingUp, Star, List } from 'lucide-react';
+import Confetti from 'react-confetti';
 import type { User, Application } from '../types';
 import { startOfWeek, endOfWeek, format, isWithinInterval } from 'date-fns';
 
 interface UserCardProps {
   user: User;
   applications: Application[];
-  rank: number;
+  allUsers: User[]; // Pass all users to determine ranking
+  rank: number; // Rank will now be calculated dynamically
   onUpdateGoals: (dailyGoal: number, weeklyGoal: number) => void;
 }
 
-export function UserCard({ user, applications, rank, onUpdateGoals }: UserCardProps) {
+export function UserCard({ user, applications, allUsers, onUpdateGoals }: UserCardProps) {
   const today = new Date();
   const todayStr = format(today, 'yyyy-MM-dd');
   
   const userApps = applications.filter(app => app.userId === user.id);
+  const totalCount = userApps.length; // Total applications count
   const todayCount = userApps.filter(app => app.date === todayStr).length;
-  
+
   const weekCount = userApps.filter(app => 
     isWithinInterval(new Date(app.date), {
       start: startOfWeek(today),
@@ -24,8 +27,30 @@ export function UserCard({ user, applications, rank, onUpdateGoals }: UserCardPr
     })
   ).length;
 
+  const [showConfetti, setShowConfetti] = useState(false);
+
+  // Confetti logic when goals are met
   const dailyGoalMet = todayCount >= user.dailyGoal;
   const weeklyGoalMet = weekCount >= user.weeklyGoal;
+
+  useEffect(() => {
+    if (dailyGoalMet || weeklyGoalMet) {
+      setShowConfetti(true);
+      const timer = setTimeout(() => setShowConfetti(false), 3000); // Confetti for 3 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [dailyGoalMet, weeklyGoalMet]);
+
+  // Calculate rankings based on today's application count
+  const userRankings = allUsers.map(userItem => {
+    const userTodayCount = applications.filter(
+      app => app.userId === userItem.id && app.date === todayStr
+    ).length;
+    return { userId: userItem.id, todayCount: userTodayCount };
+  });
+
+  userRankings.sort((a, b) => b.todayCount - a.todayCount);
+  const rank = userRankings.findIndex(u => u.userId === user.id) + 1;
 
   const handleUpdateGoals = () => {
     const dailyGoal = parseInt(prompt('Enter your daily application goal:', user.dailyGoal.toString()) || '0');
@@ -41,6 +66,7 @@ export function UserCard({ user, applications, rank, onUpdateGoals }: UserCardPr
 
   return (
     <div className={cardClassName}>
+      {showConfetti && <Confetti />}
       <div className="flex items-center gap-4 mb-4">
         <img
           src={user.avatar}
@@ -83,6 +109,14 @@ export function UserCard({ user, applications, rank, onUpdateGoals }: UserCardPr
             {weekCount} / {user.weeklyGoal}
             {weeklyGoalMet && <Star className="w-5 h-5 text-yellow-500 inline ml-2" />}
           </p>
+        </div>
+
+        <div className="bg-green-50 p-3 rounded-lg">
+          <div className="flex items-center gap-2">
+            <List className="w-5 h-5 text-green-600" />
+            <span className="text-sm text-gray-600">Total Apps</span>
+          </div>
+          <p className="text-2xl font-bold text-green-600">{totalCount}</p>
         </div>
       </div>
 
