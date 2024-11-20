@@ -6,7 +6,7 @@ import { AddApplicationModal } from './components/AddApplicationModal';
 import { Stats } from './components/Stats';
 import type { User, Application } from './types';
 import { fetchUsers, fetchApplications, createUser, createApplication, updateUserGoals } from './api';
-import { startOfWeek, endOfWeek, format } from 'date-fns';
+import { startOfWeek, endOfWeek, subDays, format } from 'date-fns';
 
 function App() {
   const [showAddModal, setShowAddModal] = useState(false);
@@ -18,7 +18,7 @@ function App() {
   const todayStr = format(new Date(), 'yyyy-MM-dd');
   const today = new Date();
   const dateRange = {
-    start: format(startOfWeek(today), 'yyyy-MM-dd'),
+    start: format(subDays(today, 7), 'yyyy-MM-dd'),
     end: format(endOfWeek(today), 'yyyy-MM-dd'),
   };
 
